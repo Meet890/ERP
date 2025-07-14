@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 const upload = require("../utils/multer");
+const verifyToken = require("../middleware/auth");
+
 
 const {
   facultyLogin,

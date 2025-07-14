@@ -251,6 +251,11 @@ exports.updatePassword = async (req, res, next) => {
     }
     let hashedPassword;
     hashedPassword = await bcrypt.hash(newPassword, 10);
+    //let hashedPassword;
+    //hashedPassword = await bcrypt.hash(newPassword, 10);
+    //faculty.password = hashedPassword;
+    //await faculty.save();
+
     faculty.password = hashedPassword;
     await faculty.save();
     res.status(200).json({ message: "Password Updated" });
@@ -310,13 +315,16 @@ exports.postOTP = async (req, res, next) => {
     }
 
     const faculty = await Faculty.findOne({ email });
-    if (faculty.otp !== otp) {
-      errors.otp = "Invalid OTP..Please try again";
-      return res.status(400).json(errors);
+    if (!faculty) {
+      errors.email = "Email not found";
+      return res.status(404).json(errors);
     }
+if (String(faculty.otp) !== String(otp)) {
+    errors.otp = "Invalid OTP..Please try again";
+    return res.status(400).json(errors);
+}
 
-    let hashedPassword;
-    hashedPassword = await bcrypt.compare(newPassword, 10);
+    let hashedPassword = await bcrypt.hash(newPassword, 10);
     faculty.password = hashedPassword;
     await faculty.save();
 
@@ -326,6 +334,8 @@ exports.postOTP = async (req, res, next) => {
     return res.status(400).json(err);
   }
 };
+
+
 
 exports.updateProfile = async (req, res, next) => {
   try {
