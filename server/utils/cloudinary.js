@@ -1,4 +1,5 @@
 let cloudinary = require("cloudinary");
+require("dotenv").config();
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_NAME,
@@ -7,3 +8,5 @@ cloudinary.config({
 });
 
 module.exports = cloudinary;
+
+
