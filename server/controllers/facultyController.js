@@ -342,7 +342,6 @@ exports.updateProfile = async (req, res, next) => {
     const { email, facultyMobileNumber, registrationNumber } = req.body;
 
     const faculty = await Faculty.findOne({ registrationNumber });
-    //console.log(faculty);
 
     const { _id } = faculty;
 
@@ -374,6 +373,7 @@ exports.updateProfile = async (req, res, next) => {
       success: true,
     });
   } catch (err) {
-    console.log("Error in updating Profile", err.message);
-  }
+    console.log("Error in updating Profile", err);
+    return res.status(400).json({ error: err.message || err });
+}
 };
