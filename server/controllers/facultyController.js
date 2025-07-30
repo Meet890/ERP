@@ -337,43 +337,58 @@ if (String(faculty.otp) !== String(otp)) {
 
 
 
-exports.updateProfile = async (req, res, next) => {
-  try {
-    const { email, facultyMobileNumber, registrationNumber } = req.body;
+exports.updateProfile = async (req, res) => {
+    try {
+        const { email, facultyMobileNumber, registrationNumber } = req.body;
+        
+        // Check if faculty exists in request
+        if (!req.faculty || !req.faculty._id) {
+            return res.status(401).json({
+                success: false,
+                message: "Faculty not authenticated"
+            });
+        }
 
-    const faculty = await Faculty.findOne({ registrationNumber });
+        // Validate input
+        if (!email && !facultyMobileNumber && !registrationNumber) {
+            return res.status(400).json({
+                success: false,
+                message: "Please provide at least one field to update"
+            });
+        }
 
-    const { _id } = faculty;
+        // Find and update faculty
+        const updatedFaculty = await Faculty.findByIdAndUpdate(
+            req.faculty._id,
+            { 
+                $set: {
+                    email: email || req.faculty.email,
+                    facultyMobileNumber: facultyMobileNumber || req.faculty.facultyMobileNumber,
+                    registrationNumber: registrationNumber || req.faculty.registrationNumber
+                }
+            },
+            { new: true, runValidators: true }
+        );
 
-    const updatedData = {
-      email: email || faculty.email,
-      facultyMobileNumber: facultyMobileNumber || faculty.facultyMobileNumber,
-    };
+        if (!updatedFaculty) {
+            return res.status(404).json({
+                success: false,
+                message: "Faculty not found"
+            });
+        }
 
-    if (req.body.avatar !== "") {
-      const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
-        folder: "erp",
-        width: 150,
-        crop: "scale",
-      });
+        return res.status(200).json({
+            success: true,
+            message: "Profile updated successfully",
+            faculty: updatedFaculty
+        });
 
-      updatedData.avatar = {
-        public_id: myCloud.public_id,
-        url: myCloud.secure_url,
-      };
+    } catch (error) {
+        console.error("Update profile error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error updating profile",
+            error: error.message
+        });
     }
-
-    const updatedFaculty = await Faculty.findByIdAndUpdate(_id, updatedData, {
-      new: true,
-      runValidators: true,
-      useFindAndModify: false,
-    });
-
-    res.status(200).json({
-      success: true,
-    });
-  } catch (err) {
-    console.log("Error in updating Profile", err);
-    return res.status(400).json({ error: err.message || err });
-}
 };
