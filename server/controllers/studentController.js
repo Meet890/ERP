@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+
 //utils
 const keys = require("../config/key");
 const sendEmail = require("../utils/nodemailer");
@@ -22,7 +23,7 @@ const cloudinary = require("../utils/cloudinary");
 const validateStudentLoginInput = require("../validation/studentLogin");
 const validateStudentUpdatePassword = require("../validation/studentUpdatePassword");
 const validateForgotPassword = require("../validation/forgotPassword");
-const validateOTP = require("../validation/otpValidation");
+const validateOtp = require("../validation/otpValidation");
 const { markAttendance } = require("./facultyController");
 
 
@@ -202,79 +203,113 @@ exports.updatePassword = async (req, res, next) => {
   }
 };
 
+exports.forgotPassword = async (req, res) => {
+    try {
+        const { email, registrationNumber } = req.body;
 
-//forgot password
-exports.forgotPassword = async (req, res, next) => {
-  try {
-    const { errors, isValid } = validateForgotPassword(req.body);
-    if (!isValid) {
-      return res.status(400).json(errors);
+        // Find student by email and registration number
+        const student = await Student.findOne({ 
+            email,
+            registrationNumber 
+        });
+
+        if (!student) {
+            return res.status(404).json({
+                success: false,
+                message: "Student not found with these credentials"
+            });
+        }
+
+        // Generate 6 digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Save OTP to student document
+        student.otp = otp;
+        student.otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+        await student.save();
+
+        // Send email with OTP
+        const emailData = {
+            to: email,
+            subject: "Password Reset OTP",
+            text: `Your OTP for password reset is: ${otp}. This OTP will expire in 5 minutes.`
+        };
+
+        await sendEmail(emailData);
+
+        console.log("OTP generated:", otp); // For testing purposes
+
+        return res.status(200).json({
+            success: true,
+            message: "OTP sent to your email"
+        });
+
+    } catch (error) {
+        console.error("Forgot password error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error in sending OTP",
+            error: error.message
+        });
     }
-
-    const { email } = req.body;
-    const student = await Student.findOne({ email });
-
-    if (!student) {
-      errors.email = "Email not found";
-      return res.status(400).json(errors);
-    }
-
-    function generateOTP() {
-      var digits = "0123456789";
-      let OTP = "";
-      for (let i = 0; i < 6; i++) {
-        OTP += digits[Math.floor(Math.random() * 10)];
-      }
-
-      return OTP;
-    }
-
-    const otp = generateOTP();
-    student.otp = otp;
-    await student.save();
-    await sendEmail(student.email, otp, "OTP");
-    res.status(200).json({ message: "Check your registered email for OTP" });
-
-    const helper = async () => {
-      student.otp = "";
-      await Student.save();
-    };
-
-    setTimeout(function () {
-      helper();
-    }, 3000);
-  } catch (err) {
-    console.log("Error in sending email", err.message);
-  }
 };
 
-exports.postOTP = async (req, res, next) => {
-  try {
-    const { errors, isValid } = validateOTP(req.body);
-    if (!isValid) {
-      return res.status(400).json(errors);
-    }
-    const { email, otp, newPassword, confirmNewPassword } = req.body;
-    if (newPassword !== confirmNewPassword) {
-      errors.confirmNewPassword = "Password Mismatch";
-      return res.status(400).json(errors);
-    }
-    const student = await Student.findOne({ email });
-    if (student.otp !== otp) {
-      errors.otp = "Invalid OTP, check your email again";
-      return res.status(400).json(errors);
-    }
 
-    let hashedPassword;
-    hashedPassword = await bcrypt.hash(newPassword, 10);
-    student.password = hashedPassword;
-    await student.save();
-    return res.status(200).json({ message: "Password changed successfully" });
-  } catch (err) {
-    console.log("Error in submitting OTP", err.message);
-    return res.status(400).json({ message: "Error in submitting OTP" });
-  }
+
+
+exports.postOTP = async (req, res) => {
+    try {
+        const { email, otp, newPassword, confirmNewPassword } = req.body;
+
+        // Find student
+        const student = await Student.findOne({ 
+            email,
+            otp,
+            otpExpires: { $gt: Date.now() } // Check if OTP hasn't expired
+        });
+
+        if (!student) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid or expired OTP"
+            });
+        }
+
+        // Validate passwords
+        if (newPassword !== confirmNewPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Passwords do not match"
+            });
+        }
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // Update password and clear OTP
+        student.password = hashedPassword;
+        student.otp = undefined;
+        student.otpExpires = undefined;
+        await student.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Password reset successful"
+        });
+
+    } catch (error) {
+        console.error("OTP verification error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error in OTP verification",
+            error: error.message
+        });
+    }
 };
+
+
+
 
 exports.postPrivateChat = async (req, res, next) => {
   try {
@@ -456,50 +491,56 @@ exports.previousChats = async (req, res, next) => {
   }
 };
 
-exports.updateProfile = async (req, res, next) => {
-  try {
-    const {
-      email,
-      studentMobileNumber,
-      fatherName,
-      fatherMobileNumber,
-      registrationNumber,
-    } = req.body;
 
-    const student = await Student.findOne({ registrationNumber });
+exports.updateProfile = async (req, res) => {
+    try {
+        // Check if student exists in request
+        if (!req.student) {
+            return res.status(401).json({
+                success: false,
+                message: "Student not authenticated"
+            });
+        }
 
-    const { _id } = student;
+        const { email, studentMobileNumber, fatherMobileNumber } = req.body;
+        const updateFields = {};
 
-    const updatedData = {
-      email,
-      studentMobileNumber,
-      fatherName,
-      fatherMobileNumber,
-    };
+        // Only update fields that are provided
+        if (email) updateFields.email = email;
+        if (studentMobileNumber) updateFields.studentMobileNumber = studentMobileNumber;
+        if (fatherMobileNumber) updateFields.fatherMobileNumber = fatherMobileNumber;
 
-    if (req.body.avatar !== "") {
-      const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
-        folder: "erp",
-        width: 150,
-        crop: "scale",
-      });
+        // Handle avatar upload if provided
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path);
+            updateFields.avatar = {
+                public_id: result.public_id,
+                url: result.secure_url
+            };
+        }
 
-      updatedData.avatar = {
-        public_id: myCloud.public_id,
-        url: myCloud.secure_url,
-      };
+        const updatedStudent = await Student.findByIdAndUpdate(
+            req.student._id,
+            { $set: updateFields },
+            { new: true }
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Profile updated successfully",
+            student: updatedStudent
+        });
+
+    } catch (error) {
+        console.error("Update profile error:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
-
-    const updatedStudent = await Student.findByIdAndUpdate(_id, updatedData, {
-      new: true,
-      runValidators: true,
-      useFindAndModify: false,
-    });
-
-    res.status(200).json({
-      success: true,
-    });
-  } catch (err) {
-    console.log("Error in updating Profile", err.message);
-  }
 };
+
+
+
+
+
