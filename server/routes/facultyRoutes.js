@@ -36,10 +36,16 @@ router.post(
 
 // Utility routes
 router.get(
-  "/fetch-all-subjects",
+  "/fetchAllSubjects",
   verifyToken,
   getAllSubjects
 );
+
+router.post(
+  "/fetchStudents", 
+    verifyToken, 
+    fetchStudents
+  );  
 
 router.post(
   "/markAttendance",
