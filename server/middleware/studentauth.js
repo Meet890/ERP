@@ -1,14 +1,11 @@
 const jwt = require('jsonwebtoken');
-const Student = require('../models/Student');
+const Student = require('../models/studentModel');  // Updated to match your model path
 const keys = require('../config/key');
 
 module.exports = async function (req, res, next) {
     try {
         const authHeader = req.headers.authorization;
         
-        // Debug log
-        console.log('Auth Header:', authHeader);
-
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             return res.status(401).json({
                 success: false,
@@ -16,12 +13,10 @@ module.exports = async function (req, res, next) {
             });
         }
 
-        // Extract and verify token
         const token = authHeader.split(' ')[1];
         const decoded = jwt.verify(token, keys.secretOrKey);
         
-        // Find student instead of faculty
-        const student = await Student.findById(decoded.id);
+        const student = await Student.findById(decoded.id).select('-password');
         if (!student) {
             return res.status(401).json({
                 success: false,
@@ -29,12 +24,11 @@ module.exports = async function (req, res, next) {
             });
         }
 
-        // Attach student to request object
         req.student = student;
         next();
         
     } catch (error) {
-        console.error('Student auth error:', error);
+        console.error('Auth middleware error:', error);
         return res.status(401).json({
             success: false,
             message: "Authentication failed",

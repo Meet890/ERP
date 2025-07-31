@@ -29,31 +29,31 @@ const { markAttendance } = require("./facultyController");
 
 //Student registration
 exports.registerStudent = async (req, res) => {
-    const { registrationNumber, name, department, email, password } = req.body;
+  const { registrationNumber, name, department, email, password } = req.body;
 
-    try {
-        const existingStudent = await Student.findOne({ registrationNumber });
-        if (existingStudent) {
-            return res.status(400).json({ message: "Student already exists" });
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        const newStudent = new Student({
-            registrationNumber,
-            name,
-            department,
-            email,
-            password: hashedPassword
-        });
-
-        await newStudent.save();
-
-        res.status(201).json({ message: "Student registered successfully" });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+  try {
+    const existingStudent = await Student.findOne({ registrationNumber });
+    if (existingStudent) {
+      return res.status(400).json({ message: "Student already exists" });
     }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newStudent = new Student({
+      registrationNumber,
+      name,
+      department,
+      email,
+      password: hashedPassword
+    });
+
+    await newStudent.save();
+
+    res.status(201).json({ message: "Student registered successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 
@@ -89,38 +89,51 @@ exports.studentLogin = async (req, res, next) => {
 };
 
 
-//check attendance
-exports.checkAttendance = async (req, res, next) => {
+exports.checkAttendance = async (req, res) => {
   try {
-    // console.log(req.user);
-    const studentId = req.user._id;
-    const attendance = await Attendance.find({ student: studentId }).populate(
-      "subject"
-    );
-    if (!attendance) {
-      res.status(400).json({ message: "Attendance not found" });
+    // Verify student authentication
+    if (!req.student) {
+      return res.status(401).json({
+        success: false,
+        message: "Student not authenticated"
+      });
     }
 
-    res.status(200).json({
-      result: attendance.map((att) => {
-        let res = {};
-        res.attendance = (
-          (att.lecturesAttended / att.totalLectures) *
-          100
-        ).toFixed(2);
-        res.subjectCode = att.subject.subjectCode;
-        res.subjectName = att.subject.subjectName;
-        res.maxHours = att.subject.totalLectures;
-        res.absentHours = att.totalLectures - att.lecturesAttended;
-        res.totalLectures = att.totalLectures;
-        return res;
-      }),
+    const attendance = await Attendance.find({
+      student: req.student._id
+    }).populate("subject");
+
+    if (!attendance || attendance.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No attendance records found",
+        result: []
+      });
+    }
+
+    const result = attendance.map((att) => ({
+      attendance: ((att.lecturesAttended / att.totalLectures) * 100).toFixed(2),
+      subjectCode: att.subject.subjectCode,
+      subjectName: att.subject.subjectName,
+      maxHours: att.subject.totalLectures,
+      absentHours: att.totalLectures - att.lecturesAttended,
+      totalLectures: att.totalLectures
+    }));
+
+    return res.status(200).json({
+      success: true,
+      result
     });
-  } catch (err) {
-    console.log("Error in getting attending details", err.message);
+
+  } catch (error) {
+    console.error("Error in getting attendance details:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching attendance",
+      error: error.message
+    });
   }
 };
-
 
 //get all students
 exports.getAllStudents = async (req, res, next) => {
@@ -204,108 +217,108 @@ exports.updatePassword = async (req, res, next) => {
 };
 
 exports.forgotPassword = async (req, res) => {
-    try {
-        const { email, registrationNumber } = req.body;
+  try {
+    const { email, registrationNumber } = req.body;
 
-        // Find student by email and registration number
-        const student = await Student.findOne({ 
-            email,
-            registrationNumber 
-        });
+    // Find student by email and registration number
+    const student = await Student.findOne({
+      email,
+      registrationNumber
+    });
 
-        if (!student) {
-            return res.status(404).json({
-                success: false,
-                message: "Student not found with these credentials"
-            });
-        }
-
-        // Generate 6 digit OTP
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        
-        // Save OTP to student document
-        student.otp = otp;
-        student.otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
-        await student.save();
-
-        // Send email with OTP
-        const emailData = {
-            to: email,
-            subject: "Password Reset OTP",
-            text: `Your OTP for password reset is: ${otp}. This OTP will expire in 5 minutes.`
-        };
-
-        await sendEmail(emailData);
-
-        console.log("OTP generated:", otp); // For testing purposes
-
-        return res.status(200).json({
-            success: true,
-            message: "OTP sent to your email"
-        });
-
-    } catch (error) {
-        console.error("Forgot password error:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Error in sending OTP",
-            error: error.message
-        });
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found with these credentials"
+      });
     }
+
+    // Generate 6 digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Save OTP to student document
+    student.otp = otp;
+    student.otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+    await student.save();
+
+    // Send email with OTP
+    const emailData = {
+      to: email,
+      subject: "Password Reset OTP",
+      text: `Your OTP for password reset is: ${otp}. This OTP will expire in 5 minutes.`
+    };
+
+    await sendEmail(emailData);
+
+    console.log("OTP generated:", otp); // For testing purposes
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP sent to your email"
+    });
+
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error in sending OTP",
+      error: error.message
+    });
+  }
 };
 
 
 
 
 exports.postOTP = async (req, res) => {
-    try {
-        const { email, otp, newPassword, confirmNewPassword } = req.body;
+  try {
+    const { email, otp, newPassword, confirmNewPassword } = req.body;
 
-        // Find student
-        const student = await Student.findOne({ 
-            email,
-            otp,
-            otpExpires: { $gt: Date.now() } // Check if OTP hasn't expired
-        });
+    // Find student
+    const student = await Student.findOne({
+      email,
+      otp,
+      otpExpires: { $gt: Date.now() } // Check if OTP hasn't expired
+    });
 
-        if (!student) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid or expired OTP"
-            });
-        }
-
-        // Validate passwords
-        if (newPassword !== confirmNewPassword) {
-            return res.status(400).json({
-                success: false,
-                message: "Passwords do not match"
-            });
-        }
-
-        // Hash new password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-        // Update password and clear OTP
-        student.password = hashedPassword;
-        student.otp = undefined;
-        student.otpExpires = undefined;
-        await student.save();
-
-        return res.status(200).json({
-            success: true,
-            message: "Password reset successful"
-        });
-
-    } catch (error) {
-        console.error("OTP verification error:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Error in OTP verification",
-            error: error.message
-        });
+    if (!student) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired OTP"
+      });
     }
+
+    // Validate passwords
+    if (newPassword !== confirmNewPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Passwords do not match"
+      });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password and clear OTP
+    student.password = hashedPassword;
+    student.otp = undefined;
+    student.otpExpires = undefined;
+    await student.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successful"
+    });
+
+  } catch (error) {
+    console.error("OTP verification error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error in OTP verification",
+      error: error.message
+    });
+  }
 };
 
 
@@ -384,35 +397,62 @@ exports.getAllSubjects = async (req, res, next) => {
   }
 };
 
-exports.getAllMarks = async (req, res, next) => {
-  try {
-    const { department, year, id } = req.user;
-    const getMarks = await Mark.find({ department, student: id }).populate(
-      "subject"
-    );
+exports.getAllMarks = async (req, res) => {
+    try {
+        // Check if student is authenticated
+        if (!req.student) {
+            return res.status(401).json({
+                success: false,
+                message: "Student not authenticated"
+            });
+        }
 
-    const UnitTest1 = getMarks.filter((obj) => {
-      return obj.exam === "Unit Test 1";
-    });
+        // Find all marks for the student
+        const marks = await Mark.find({ 
+            student: req.student._id 
+        }).populate({
+            path: 'subject',
+            select: 'subjectName subjectCode totalMarks'
+        });
 
-    const UnitTest2 = getMarks.filter((obj) => {
-      return obj.exam === "Unit Test 2";
-    });
+        if (!marks || marks.length === 0) {
+            return res.status(200).json({
+                success: true,
+                message: "No marks records found",
+                result: []
+            });
+        }
 
-    const Semester = getMarks.filter((obj) => {
-      return obj.exam === "Semester";
-    });
+        // Format marks data
+        const result = marks.map(mark => ({
+            subjectName: mark.subject.subjectName,
+            subjectCode: mark.subject.subjectCode,
+            totalMarks: mark.subject.totalMarks,
+            marksObtained: mark.marksObtained,
+            exam: mark.exam, // 'unitTest1', 'unitTest2', 'finalExam'
+            percentage: ((mark.marksObtained / mark.subject.totalMarks) * 100).toFixed(2)
+        }));
 
-    res.status(200).json({
-      result: {
-        UnitTest1,
-        UnitTest2,
-        Semester,
-      },
-    });
-  } catch (err) {
-    return res.status(400).json({ "Error in getting marks": err.message });
-  }
+        // Group marks by exam type
+        const groupedMarks = {
+            unitTest1: result.filter(mark => mark.exam === 'unitTest1'),
+            unitTest2: result.filter(mark => mark.exam === 'unitTest2'),
+            finalExam: result.filter(mark => mark.exam === 'finalExam')
+        };
+
+        return res.status(200).json({
+            success: true,
+            marks: groupedMarks
+        });
+
+    } catch (error) {
+        console.error("Error fetching marks:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error fetching marks",
+            error: error.message
+        });
+    }
 };
 
 exports.differentChats = async (req, res, next) => {
@@ -493,51 +533,51 @@ exports.previousChats = async (req, res, next) => {
 
 
 exports.updateProfile = async (req, res) => {
-    try {
-        // Check if student exists in request
-        if (!req.student) {
-            return res.status(401).json({
-                success: false,
-                message: "Student not authenticated"
-            });
-        }
-
-        const { email, studentMobileNumber, fatherMobileNumber } = req.body;
-        const updateFields = {};
-
-        // Only update fields that are provided
-        if (email) updateFields.email = email;
-        if (studentMobileNumber) updateFields.studentMobileNumber = studentMobileNumber;
-        if (fatherMobileNumber) updateFields.fatherMobileNumber = fatherMobileNumber;
-
-        // Handle avatar upload if provided
-        if (req.file) {
-            const result = await cloudinary.uploader.upload(req.file.path);
-            updateFields.avatar = {
-                public_id: result.public_id,
-                url: result.secure_url
-            };
-        }
-
-        const updatedStudent = await Student.findByIdAndUpdate(
-            req.student._id,
-            { $set: updateFields },
-            { new: true }
-        );
-
-        return res.status(200).json({
-            success: true,
-            message: "Profile updated successfully",
-            student: updatedStudent
-        });
-
-    } catch (error) {
-        console.error("Update profile error:", error);
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
+  try {
+    // Check if student exists in request
+    if (!req.student) {
+      return res.status(401).json({
+        success: false,
+        message: "Student not authenticated"
+      });
     }
+
+    const { email, studentMobileNumber, fatherMobileNumber } = req.body;
+    const updateFields = {};
+
+    // Only update fields that are provided
+    if (email) updateFields.email = email;
+    if (studentMobileNumber) updateFields.studentMobileNumber = studentMobileNumber;
+    if (fatherMobileNumber) updateFields.fatherMobileNumber = fatherMobileNumber;
+
+    // Handle avatar upload if provided
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path);
+      updateFields.avatar = {
+        public_id: result.public_id,
+        url: result.secure_url
+      };
+    }
+
+    const updatedStudent = await Student.findByIdAndUpdate(
+      req.student._id,
+      { $set: updateFields },
+      { new: true }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      student: updatedStudent
+    });
+
+  } catch (error) {
+    console.error("Update profile error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
 };
 
 
