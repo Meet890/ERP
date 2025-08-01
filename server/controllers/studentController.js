@@ -28,31 +28,31 @@ const { markAttendance } = require("./facultyController");
 
 //Student registration
 exports.registerStudent = async (req, res) => {
-    const { registrationNumber, name, department, email, password } = req.body;
+  const { registrationNumber, name, department, email, password } = req.body;
 
-    try {
-        const existingStudent = await Student.findOne({ registrationNumber });
-        if (existingStudent) {
-            return res.status(400).json({ message: "Student already exists" });
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        const newStudent = new Student({
-            registrationNumber,
-            name,
-            department,
-            email,
-            password: hashedPassword
-        });
-
-        await newStudent.save();
-
-        res.status(201).json({ message: "Student registered successfully" });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+  try {
+    const existingStudent = await Student.findOne({ registrationNumber });
+    if (existingStudent) {
+      return res.status(400).json({ message: "Student already exists" });
     }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newStudent = new Student({
+      registrationNumber,
+      name,
+      department,
+      email,
+      password: hashedPassword
+    });
+
+    await newStudent.save();
+
+    res.status(201).json({ message: "Student registered successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 
@@ -237,42 +237,113 @@ exports.forgotPassword = async (req, res, next) => {
 
     const helper = async () => {
       student.otp = "";
-      await Student.save();
+      await student.save();
     };
 
     setTimeout(function () {
       helper();
-    }, 3000);
+    }, 5 * 60 * 1000); // OTP expires after 5 minutes
+
   } catch (err) {
     console.log("Error in sending email", err.message);
   }
 };
 
+
+
+
+
 exports.postOTP = async (req, res, next) => {
   try {
     const { errors, isValid } = validateOTP(req.body);
+    console.log("Validation result:", { isValid, errors });
+
     if (!isValid) {
       return res.status(400).json(errors);
     }
+
     const { email, otp, newPassword, confirmNewPassword } = req.body;
+    console.log("POST OTP BODY:", req.body);
+
     if (newPassword !== confirmNewPassword) {
       errors.confirmNewPassword = "Password Mismatch";
       return res.status(400).json(errors);
     }
+
     const student = await Student.findOne({ email });
+    console.log("Student found:", student);
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    console.log("Student.otp from DB:", student.otp);
+    console.log("OTP received:", otp);
+
     if (student.otp !== otp) {
       errors.otp = "Invalid OTP, check your email again";
       return res.status(400).json(errors);
     }
 
-    let hashedPassword;
-    hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
     student.password = hashedPassword;
+
+    // Clear the OTP after successful password change (optional)
+    student.otp = null;
+
     await student.save();
+
     return res.status(200).json({ message: "Password changed successfully" });
   } catch (err) {
     console.log("Error in submitting OTP", err.message);
     return res.status(400).json({ message: "Error in submitting OTP" });
+  }
+};
+
+
+
+
+
+
+
+exports.sendOTP = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const student = await Student.findOneAndUpdate(
+      { email },
+      { otp: otp },
+      { new: true }
+    );
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Send mail
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: {
+        user: process.env.EMAIL,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL,
+      to: email,
+      subject: "Your OTP for password reset",
+      text: `Your OTP is: ${otp}`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    return res.status(200).json({ message: "OTP sent successfully" });
+  } catch (error) {
+    console.error("Error sending OTP:", error.message);
+    return res.status(500).json({ message: "Server error sending OTP" });
   }
 };
 
@@ -312,6 +383,9 @@ exports.postPrivateChat = async (req, res, next) => {
   }
 };
 
+
+
+
 exports.getPrivateChat = async (req, res, next) => {
   try {
     const { roomId } = req.params;
@@ -335,6 +409,8 @@ exports.getPrivateChat = async (req, res, next) => {
   }
 };
 
+
+
 exports.getAllSubjects = async (req, res, next) => {
   try {
     const { department, year } = req.user;
@@ -348,6 +424,9 @@ exports.getAllSubjects = async (req, res, next) => {
     return res.status(400).json({ "Error in fetching subjects": err.message });
   }
 };
+
+
+
 
 exports.getAllMarks = async (req, res, next) => {
   try {
@@ -379,6 +458,9 @@ exports.getAllMarks = async (req, res, next) => {
     return res.status(400).json({ "Error in getting marks": err.message });
   }
 };
+
+
+
 
 exports.differentChats = async (req, res, next) => {
   try {
@@ -431,6 +513,8 @@ exports.differentChats = async (req, res, next) => {
   }
 };
 
+
+
 exports.previousChats = async (req, res, next) => {
   try {
     const { senderName } = req.params;
@@ -456,6 +540,8 @@ exports.previousChats = async (req, res, next) => {
   }
 };
 
+
+
 exports.updateProfile = async (req, res, next) => {
   try {
     const {
@@ -468,6 +554,10 @@ exports.updateProfile = async (req, res, next) => {
 
     const student = await Student.findOne({ registrationNumber });
 
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Student not found" });
+    }
+
     const { _id } = student;
 
     const updatedData = {
@@ -478,17 +568,26 @@ exports.updateProfile = async (req, res, next) => {
     };
 
     if (req.body.avatar !== "") {
-      const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
-        folder: "erp",
-        width: 150,
-        crop: "scale",
-      });
+      try {
+        const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
+          folder: "erp",
+          width: 150,
+          crop: "scale",
+        });
 
-      updatedData.avatar = {
-        public_id: myCloud.public_id,
-        url: myCloud.secure_url,
-      };
+        updatedData.avatar = {
+          public_id: myCloud.public_id,
+          url: myCloud.secure_url,
+        };
+      } catch (uploadErr) {
+        console.error("Cloudinary upload error:", uploadErr);
+        return res.status(500).json({
+          success: false,
+          message: "Image upload failed",
+        });
+      }
     }
+
 
     const updatedStudent = await Student.findByIdAndUpdate(_id, updatedData, {
       new: true,
@@ -498,8 +597,15 @@ exports.updateProfile = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
+      updatedStudent, // <-- send updated info to frontend
     });
+
   } catch (err) {
-    console.log("Error in updating Profile", err.message);
+    console.log("Error in updating Profile", err);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
+
+
+
+//https://www.base64-image.de/  this website is used to convert image to base64

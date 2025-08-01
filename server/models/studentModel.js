@@ -21,7 +21,12 @@ const studentSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true
+    },
+    otp: {
+        type: String,    
+        default: null
     }
 }, { timestamps: true });
+
 
 module.exports = mongoose.model('Student', studentSchema);

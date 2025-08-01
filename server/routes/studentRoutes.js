@@ -16,6 +16,7 @@ const {
   updatePassword,
   forgotPassword,
   postOTP,
+  sendOTP,
   postPrivateChat,
   getPrivateChat,
   differentChats,
@@ -28,6 +29,7 @@ router.post("/register", registerStudent);
 router.post("/login", studentLogin);
 router.post("/forgotPassword", forgotPassword);
 router.post("/postOTP", postOTP);
+router.post("/sendOTP", sendOTP);
 router.put(
   "/updateProfile",
   passport.authenticate("jwt", { session: false }),

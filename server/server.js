@@ -13,8 +13,12 @@ dotenv.config();
 const app = express();
 let server = http.createServer(app);
 let io = socket(server);
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
+//app.use(express.urlencoded({ extended: false }));
+//app.use(express.json());
+
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '10mb' }));
+
 app.use(fileUpload());
 app.use(cors());
 app.use(passport.initialize());

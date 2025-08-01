@@ -23,6 +23,8 @@ const Faculty = require("../models/Faculty");
 const Attendance = require("../models/Attendance");
 const Mark = require("../models/Marks");
 
+
+
 exports.facultyLogin = async (req, res, next) => {
   try {
     const { errors, isValid } = validateFacultyLoginInput(req.body);
@@ -59,6 +61,9 @@ exports.facultyLogin = async (req, res, next) => {
     console.log("Error in faculty login", err.message);
   }
 };
+
+
+
 
 exports.fetchStudents = async (req, res, next) => {
   try {
@@ -105,6 +110,9 @@ exports.fetchStudents = async (req, res, next) => {
     console.log("Error in fetchStudents", err.message);
   }
 };
+
+
+
 
 exports.markAttendance = async (req, res, next) => {
   try {
@@ -170,6 +178,10 @@ exports.markAttendance = async (req, res, next) => {
   }
 };
 
+
+
+
+
 exports.uploadMarks = async (req, res, next) => {
   try {
     const { errors, isValid } = validateFacultyUploadMarks(req.body);
@@ -202,7 +214,7 @@ exports.uploadMarks = async (req, res, next) => {
         department,
         section,
 
-        marks: marks[i].value,
+        marks: marks[i].marksObtained,
         totalMarks,
       });
 
@@ -211,9 +223,13 @@ exports.uploadMarks = async (req, res, next) => {
 
     res.status(200).json({ message: "Marks uploaded successfully" });
   } catch (err) {
-    console.log("Error in uploading marks");
-  }
+  console.error("Error in uploading marks:", err);
+  res.status(500).json({ message: "Internal server error" });
+}
 };
+
+
+
 
 exports.getAllSubjects = async (req, res, next) => {
   try {
@@ -230,6 +246,9 @@ exports.getAllSubjects = async (req, res, next) => {
       .json({ message: `Error in getting all Subjects", ${err.message}` });
   }
 };
+
+
+
 
 exports.updatePassword = async (req, res, next) => {
   try {
@@ -263,6 +282,9 @@ exports.updatePassword = async (req, res, next) => {
     console.log("Error in updating password", err.message);
   }
 };
+
+
+
 
 exports.forgotPassword = async (req, res, next) => {
   try {
@@ -300,6 +322,8 @@ exports.forgotPassword = async (req, res, next) => {
     console.log("Error in sending OTP email", err.message);
   }
 };
+
+
 
 exports.postOTP = async (req, res, next) => {
   try {
