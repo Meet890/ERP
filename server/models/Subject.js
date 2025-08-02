@@ -20,7 +20,7 @@ const subjectSchema = new Schema({
     default: 30,
   },
   year: {
-    type: String,
+    type: Number,
     required: true,
   },
   attendance: {

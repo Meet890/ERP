@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const Faculty = require('../models/faculty');
+const Faculty = require('../models/Faculty');
 const keys = require('../config/key');
 
 module.exports = async function (req, res, next) {

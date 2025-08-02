@@ -6,7 +6,7 @@ const keys = require("../config/key");
 const sendEmail = require("../utils/nodemailer");
 
 //Models
-// const Student = require("../models/Student");
+//const Student = require("../models/Student");
 const Subject = require("../models/Subject");
 const Attendance = require("../models/Attendance");
 const Message = require("../models/Message");
@@ -79,6 +79,8 @@ exports.studentLogin = async (req, res, next) => {
   }
 
   const payload = { id: student.id, student };
+
+
   jwt.sign(payload, keys.secretOrKey, { expiresIn: "2d" }, (err, token) => {
     res.json({
       success: true,
@@ -349,6 +351,8 @@ exports.sendOTP = async (req, res) => {
 
 exports.postPrivateChat = async (req, res, next) => {
   try {
+    console.log("Request Body:", req.body);
+
     const {
       senderName,
       senderId,
@@ -358,30 +362,46 @@ exports.postPrivateChat = async (req, res, next) => {
       message,
     } = req.body;
 
+    if (!receiverRegistrationNumber) {
+      return res.status(400).json({ error: "receiverRegistrationNumber is missing" });
+    }
+
+    const trimmedRegNo = receiverRegistrationNumber.trim();
+    console.log("Looking for student with registrationNumber:", trimmedRegNo);
+
     const receiverStudent = await Student.findOne({
-      registrationNumber: receiverRegistrationNumber,
+      registrationNumber: trimmedRegNo,
     });
 
-    //console.log(receiverStudent);
+    console.log("receiverStudent is", receiverStudent);
 
-    const newMessage = await new Message({
+    if (!receiverStudent) {
+      return res.status(404).json({ error: "Receiver student not found" });
+    }
+
+    const newMessage = new Message({
       senderName,
       senderId,
       roomId,
       message,
       senderRegistrationNumber,
-      receiverRegistrationNumber,
+      receiverRegistrationNumber: trimmedRegNo,
       receiverName: receiverStudent.name,
       receiverId: receiverStudent._id,
       createdAt: new Date(),
     });
 
     await newMessage.save();
-    res.status(200).json("Message sent successfully");
+
+    res.status(200).json({ success: true, message: "Message sent successfully" });
+
   } catch (err) {
-    console.log("Error is sending private chat", err.message);
+    console.error("Error in sending private chat:", err); // log full error
+    res.status(500).json({ error: "Internal Server Error", details: err.message });
   }
 };
+
+
 
 
 
@@ -411,20 +431,29 @@ exports.getPrivateChat = async (req, res, next) => {
 
 
 
+
+
+
 exports.getAllSubjects = async (req, res, next) => {
   try {
     const { department, year } = req.user;
-    const subjects = await Subject.find({ department, year });
+
+    console.log("req.user ===>", req.user);
+    console.log("Trying to find:", { department, year });
+
+    const subjects = await Subject.find({ department, year: Number(year) });
 
     if (subjects.length === 0) {
+      console.log("No subjects found in DB");
       return res.status(404).json({ message: "No subjects found" });
     }
+
     res.status(200).json({ result: subjects });
   } catch (err) {
+    console.log("Error in fetching subjects:", err.message);
     return res.status(400).json({ "Error in fetching subjects": err.message });
   }
 };
-
 
 
 
@@ -542,6 +571,8 @@ exports.previousChats = async (req, res, next) => {
 
 
 
+
+
 exports.updateProfile = async (req, res, next) => {
   try {
     const {
@@ -552,59 +583,39 @@ exports.updateProfile = async (req, res, next) => {
       registrationNumber,
     } = req.body;
 
+    // 🔍 Log the incoming request body
+    console.log("Incoming update request body:", req.body);
+
     const student = await Student.findOne({ registrationNumber });
 
     if (!student) {
       return res.status(404).json({ success: false, message: "Student not found" });
     }
 
-    const { _id } = student;
+    console.log("Before update:", student);
 
-    const updatedData = {
-      email,
-      studentMobileNumber,
-      fatherName,
-      fatherMobileNumber,
-    };
+    if (email) student.email = email;
+    if (studentMobileNumber) student.studentMobileNumber = Number(studentMobileNumber);
+    if (fatherName) student.fatherName = fatherName;
+    if (fatherMobileNumber) student.fatherMobileNumber = Number(fatherMobileNumber);
 
-    if (req.body.avatar !== "") {
-      try {
-        const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
-          folder: "erp",
-          width: 150,
-          crop: "scale",
-        });
+    await student.save();
 
-        updatedData.avatar = {
-          public_id: myCloud.public_id,
-          url: myCloud.secure_url,
-        };
-      } catch (uploadErr) {
-        console.error("Cloudinary upload error:", uploadErr);
-        return res.status(500).json({
-          success: false,
-          message: "Image upload failed",
-        });
-      }
-    }
-
-
-    const updatedStudent = await Student.findByIdAndUpdate(_id, updatedData, {
-      new: true,
-      runValidators: true,
-      useFindAndModify: false,
-    });
+    console.log("After update:", student);
 
     res.status(200).json({
       success: true,
-      updatedStudent, // <-- send updated info to frontend
+      updatedStudent: student,
     });
 
   } catch (err) {
-    console.log("Error in updating Profile", err);
+    console.error("Error in updating Profile", err);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
+
+
+
 
 
 

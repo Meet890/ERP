@@ -30,13 +30,9 @@ const studentSchema = new Schema({
   subjects: [
     {
       type: Schema.Types.ObjectId,
-      ref: "subject",
+      ref: "Subject",
     },
   ],
-  fatherName: {
-    type: String,
-  },
-
   registrationNumber: {
     type: String,
   },
@@ -51,7 +47,6 @@ const studentSchema = new Schema({
   batch: {
     type: String,
   },
-
   studentMobileNumber: {
     type: Number,
   },
@@ -65,6 +60,7 @@ const studentSchema = new Schema({
     type: String,
   },
 });
+
 
 module.exports =
   mongoose.models.student || mongoose.model("student", studentSchema);

@@ -14,6 +14,10 @@ const studentSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    year: {
+        type: Number,            
+        required: true
+    },
     email: {
         type: String,
         required: true
@@ -27,6 +31,5 @@ const studentSchema = new mongoose.Schema({
         default: null
     }
 }, { timestamps: true });
-
 
 module.exports = mongoose.model('Student', studentSchema);
