@@ -32,6 +32,8 @@ const subjectCodeListHelper = (data) => {
 export const facultyLogin = (credentials) => {
   return async (dispatch) => {
     try {
+      // print credentials
+      console.log("Login Credentials:", credentials);
       const { data } = await axios.post("/api/faculty/login", credentials);
       const { token } = data;
 

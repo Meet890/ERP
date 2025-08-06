@@ -257,20 +257,18 @@ exports.addFaculty = async (req, res, next) => {
       d: "mm", // Default
     });
 
-    let departmentHelper;
-    if (department === "C.S.E") {
-      departmentHelper = "01";
-    } else if (department === "E.C.E") {
-      departmentHelper = "02";
-    } else if (department === "I.T") {
-      departmentHelper = "03";
-    } else if (department === "Mechanical") {
-      departmentHelper = "04";
-    } else if (department === "Civil") {
-      departmentHelper = "05";
-    } else {
-      departmentHelper = "06";
-    }
+    const departmentCodes = {
+      "C.S.E": "01",
+      "E.C.E": "02",
+      "I.T": "03",
+      "Mechanical": "04",
+      "Civil": "05",
+      "M.C.A": "07"
+    };
+
+    const departmentHelper = departmentCodes[department] || "06";
+
+
 
     const faculties = await Faculty.find({ department });
     let helper;

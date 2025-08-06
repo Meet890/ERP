@@ -1,0 +1,195 @@
+🚩 What Can Admin Do?
+(According to your existing code)
+
+note : to perform this all operations admin token is compulsory. paste the token in type part then perform !!!
+
+Feature	HTTP Method	Endpoint	Purpose
+//Add Admin	POST	/api/admin/addAdmin	Register new Admin
+
+{
+    "name": "elon musk",
+    "email": "elonmusk@gmail.com",
+    "department": "F.O.C.A",
+    "contactNumber": 1234567890
+}
+
+
+//Admin Login	POST	/api/admin/login	Login Admin (get JWT)
+
+{
+    "registrationNumber": "",
+    "password": ""
+}
+
+
+//Add Faculty	POST	/api/admin/addFaculty	Add Faculty (Protected)
+
+{
+    "name": "",
+    "email": "",
+    "designation": "Professor",
+    "department": "M.C.A",
+    "facultyMobileNumber": "",
+
+}
+
+//Add Student	POST	/api/admin/addStudent	Add Student (Protected)
+
+{
+    "name": "",
+    "email": "",
+    "year": "2",
+    "fatherName": "",
+    "department": "M.C.A",
+    "section": "C",
+    "studentMobileNumber": "",
+    "fatherMobileNumber": ""
+}
+
+//Add Subject	POST	/api/admin/addSubject	Add Subject (Protected)
+
+{
+    "subjectName": "SOFTWARE ENGINEERING",
+    "subjectCode": "SOFTWARE3",
+    "totalLectures": "50",
+    "department": "M.C.A",
+    "year": "2"
+}
+
+//Get All Faculties	POST	/api/admin/getAllFaculty	List all Faculty
+
+--- just pass the token of admin in authorization then under type select Bearer Token here paste the token of admin.
+
+
+//Get All Students	POST	/api/admin/getAllStudent	List all Students
+
+--- same as like faculties.
+
+
+//Get All Subjects	POST	/api/admin/getAllSubject	List all Subjects
+
+--- same as like faculties.
+
+//Get Faculty by Dept	POST	/api/admin/getFaculties	Faculty filtered by Dept
+
+{
+    "department": "M.C.A"
+}
+
+
+//Get Students by Dept/Year	POST	/api/admin/getStudents	Students filtered
+
+{
+    "department": "M.C.A",
+    "year": "2"
+}
+
+
+//Get Subjects by Dept/Year	POST	/api/admin/getSubjects	Subjects filtered
+
+{
+    "department": "M.C.A",
+    "year": "2"
+}
+
+----------------------------------------------------------------------------------------------
+
+🚩 What Can Faculty Do?
+(According to your existing code)
+
+note : to perform this all operations admin token is compulsory. paste the token in type part then perform !!!
+
+Feature	HTTP Method	Endpoint	Purpose
+//Faculty Login	POST	/api/faculty/login	Login Faculty (get JWT)
+
+{
+    "registrationNumber": "",
+    "password": ""
+}
+
+
+
+//Forgot Password	POST	/api/faculty/forgotPassword	Send OTP to registered email
+
+{
+    "email": ""
+}
+
+//Submit OTP	POST	/api/faculty/postOTP	Verify OTP and reset password
+
+{
+    "email": "",
+    "otp":"599141",
+    "newPassword": "",
+    "confirmNewPassword": ""
+}
+
+
+//Update Profile   PUT	/api/faculty/updateProfile     Update profile (Protected)// for that we need to use cloud storage store data
+
+
+{
+    "email": "",
+    "facultyMobileNumber": "",
+    "registrationNumber": ""
+}
+
+
+//Update Password	POST	/api/faculty/updatePassword	Change password (Protected)
+
+{
+    "registrationNumber": "",
+    "oldPassword": "",
+    "newPassword": "",
+    "confirmNewPassword": ""
+}
+
+
+//Fetch Students by Dept	POST	/api/faculty/fetchStudents	Get students for attendance/marks (Protected)
+
+{
+    "department": "M.C.A",
+    "year": "2",
+    "section": "C"
+}
+
+
+//Fetch All Subjects	POST	/api/faculty/fetchAllSubjects	List all subjects (Protected)
+
+--- just pass the token of faculty in authorization then under type select Bearer Token here paste the token of faculty.
+
+
+//Mark Attendance	POST	/api/faculty/markAttendance	Mark attendance for students (Protected)
+
+{
+    "selectedStudents": ["688b3db320ea114f760a13a2"],
+    "subjectCode": "AI1",
+    "department": "M.C.A",
+    "year": 2025,
+    "section": "C"
+}
+
+
+//Upload Marks	POST	/api/faculty/uploadMarks	Upload marks for exams (Protected)
+
+{
+    "subjectCode": "CRYPTO2",
+    "exam": "FINAL EXAM",
+    "totalMarks": 100,
+    "section": "C",
+    "marks": [
+        {
+            "studentId": "688b3db320ea114f760a13a2",
+            "marksObtained": 98
+        }
+    ]
+}
+
+
+----------------------------------------------------------------------------------------------------------
+
+student is in progress....
+
+
+
+
