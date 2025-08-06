@@ -14,10 +14,6 @@ const studentSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    year: {
-        type: Number,            
-        required: true
-    },
     email: {
         type: String,
         required: true
@@ -25,10 +21,6 @@ const studentSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true
-    },
-    otp: {
-        type: String,    
-        default: null
     }
 }, { timestamps: true });
 

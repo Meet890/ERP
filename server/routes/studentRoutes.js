@@ -3,6 +3,7 @@ const express = require("express");
 const router = require("express").Router();
 const passport = require("passport");
 const upload = require("../utils/multer");
+const studentAuth = require("../middleware/studentAuth");
 
 const {
   registerStudent,
@@ -16,7 +17,6 @@ const {
   updatePassword,
   forgotPassword,
   postOTP,
-  sendOTP,
   postPrivateChat,
   getPrivateChat,
   differentChats,
@@ -29,72 +29,22 @@ router.post("/register", registerStudent);
 router.post("/login", studentLogin);
 router.post("/forgotPassword", forgotPassword);
 router.post("/postOTP", postOTP);
-router.post("/sendOTP", sendOTP);
 router.put(
-  "/updateProfile",
-  passport.authenticate("jwt", { session: false }),
-  updateProfile
+    "/updateProfile",
+    studentAuth,
+    upload.single("avatar"),
+    updateProfile
 );
-router.post(
-  "/updatePassword",
-  passport.authenticate("jwt", { session: false }),
-  updatePassword
-);
-
-//Chat Routes
-router.get(
-  "/chat/:roomId",
-  passport.authenticate("jwt", { session: false }),
-  getPrivateChat
-);
-router.post(
-  "/chat/:roomId",
-  passport.authenticate("jwt", { session: false }),
-  postPrivateChat
-);
-router.get(
-  "/chat/newerChats/:receiverName",
-  passport.authenticate("jwt", { session: false }),
-  differentChats
-);
-router.get(
-  "/chat/previousChats/:senderName",
-  passport.authenticate("jwt", { session: false }),
-  previousChats
-);
-
-//Peformance Routes
-router.get(
-  "/getMarks",
-  passport.authenticate("jwt", { session: false }),
-  getAllMarks
-);
-router.get(
-  "/getAllSubjects",
-  passport.authenticate("jwt", { session: false }),
-  getAllSubjects
-);
-router.get(
-  "/checkAttendance",
-  passport.authenticate("jwt", { session: false }),
-  checkAttendance
-);
-
-//Search
-router.post(
-  "/getAllStudents",
-  passport.authenticate("jwt", { session: false }),
-  getAllStudents
-);
-router.post(
-  "/getStudentByRegNum",
-  passport.authenticate("jwt", { session: false }),
-  getStudentByRegNum
-);
-router.post(
-  "/getStudentByName",
-  passport.authenticate("jwt", { session: false }),
-  getStudentByName
-);
+router.post("/updatePassword", studentAuth, updatePassword);
+router.get("/chat/:roomId", studentAuth, getPrivateChat);
+router.post("/chat/:roomId", studentAuth, postPrivateChat);
+router.get("/chat/newerChats/:receiverName", studentAuth, differentChats);
+router.get("/chat/previousChats/:senderName", studentAuth, previousChats);
+router.get("/getMarks", studentAuth, getAllMarks);
+router.get("/getAllSubjects", studentAuth, getAllSubjects);
+router.get("/checkAttendance", studentAuth, checkAttendance);
+router.post("/getAllStudents", studentAuth, getAllStudents);
+router.post("/getStudentByRegNum", studentAuth, getStudentByRegNum);
+router.post("/getStudentByName", studentAuth, getStudentByName);
 
 module.exports = router;

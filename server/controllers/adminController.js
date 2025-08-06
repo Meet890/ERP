@@ -18,9 +18,6 @@ const Admin = require("../models/Admin");
 //Config
 const keys = require("../config/key");
 
-
-
-
 exports.addAdmin = async (req, res, next) => {
   try {
     const { errors, isValid } = validateAdminRegisterInput(req.body);
@@ -104,9 +101,6 @@ exports.addAdmin = async (req, res, next) => {
   }
 };
 
-
-
-
 exports.adminLogin = async (req, res, next) => {
   try {
     const { errors, isValid } = validateAdminLoginInput(req.body);
@@ -149,9 +143,6 @@ exports.adminLogin = async (req, res, next) => {
     console.log("Error in admin login", err.message);
   }
 };
-
-
-
 
 exports.addStudent = async (req, res, next) => {
   try {
@@ -244,9 +235,6 @@ exports.addStudent = async (req, res, next) => {
   }
 };
 
-
-
-
 exports.addFaculty = async (req, res, next) => {
   try {
     const { errors, isValid } = validateFacultyRegisterInput(req.body);
@@ -269,20 +257,18 @@ exports.addFaculty = async (req, res, next) => {
       d: "mm", // Default
     });
 
-    let departmentHelper;
-    if (department === "C.S.E") {
-      departmentHelper = "01";
-    } else if (department === "E.C.E") {
-      departmentHelper = "02";
-    } else if (department === "I.T") {
-      departmentHelper = "03";
-    } else if (department === "Mechanical") {
-      departmentHelper = "04";
-    } else if (department === "Civil") {
-      departmentHelper = "05";
-    } else {
-      departmentHelper = "06";
-    }
+    const departmentCodes = {
+      "C.S.E": "01",
+      "E.C.E": "02",
+      "I.T": "03",
+      "Mechanical": "04",
+      "Civil": "05",
+      "M.C.A": "07"
+    };
+
+    const departmentHelper = departmentCodes[department] || "06";
+
+
 
     const faculties = await Faculty.find({ department });
     let helper;
@@ -323,9 +309,6 @@ exports.addFaculty = async (req, res, next) => {
       .json({ message: `Error in adding new Faculty", ${err.message}` });
   }
 };
-
-
-
 
 exports.addSubject = async (req, res, next) => {
   try {
@@ -368,9 +351,6 @@ exports.addSubject = async (req, res, next) => {
   }
 };
 
-
-
-
 exports.getAllStudents = async (req, res, next) => {
   try {
     const students = await Student.find();
@@ -386,9 +366,6 @@ exports.getAllStudents = async (req, res, next) => {
   }
 };
 
-
-
-
 exports.getAllFaculty = async (req, res, next) => {
   try {
     const faculties = await Faculty.find({});
@@ -402,9 +379,6 @@ exports.getAllFaculty = async (req, res, next) => {
       .json({ message: `Error in getting all faculties", ${err.message}` });
   }
 };
-
-
-
 
 exports.getAllSubjects = async (req, res, next) => {
   try {
@@ -422,8 +396,6 @@ exports.getAllSubjects = async (req, res, next) => {
   }
 };
 
-
-
 exports.getStudents = async (req, res, next) => {
   try {
     const { department, year } = req.body;
@@ -434,9 +406,6 @@ exports.getStudents = async (req, res, next) => {
   }
 };
 
-
-
-
 exports.getFaculty = async (req, res, next) => {
   try {
     const { department } = req.body;
@@ -446,9 +415,6 @@ exports.getFaculty = async (req, res, next) => {
     console.log("Error in gettting all faculties", err.message);
   }
 };
-
-
-
 
 exports.getSubjects = async (req, res, next) => {
   try {
