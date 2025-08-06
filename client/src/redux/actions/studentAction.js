@@ -165,6 +165,8 @@ export const getAllSubjects = () => {
     try {
       const { data } = await axios.get("/api/student/getAllSubjects");
       dispatch(getAllSubjectsHelper(data.result));
+      //print data
+      // console.log("Subjects fetched successfully", data.result);
     } catch (err) {
       console.log("Error in getting subjects", err.message);
     }
