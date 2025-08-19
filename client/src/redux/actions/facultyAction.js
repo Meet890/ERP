@@ -32,8 +32,6 @@ const subjectCodeListHelper = (data) => {
 export const facultyLogin = (credentials) => {
   return async (dispatch) => {
     try {
-      // print credentials
-      console.log("Login Credentials:", credentials);
       const { data } = await axios.post("/api/faculty/login", credentials);
       const { token } = data;
 
@@ -184,13 +182,12 @@ export const uploadMarks = (
         year,
         section,
       });
-       
+      // alert("Marks uploaded successfully");
       dispatch({
         type: "HELPER",
         payload: true,
       });
     } catch (err) {
-      // alert("Marks uploaded successfully");
       dispatch({
         type: SET_ERRORS_HELPER,
         payload: err.response.data,

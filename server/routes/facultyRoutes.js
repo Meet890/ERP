@@ -1,9 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const passport = require("passport");
 const upload = require("../utils/multer");
 const verifyToken = require("../middleware/auth");
-
 
 const {
   facultyLogin,
@@ -17,42 +15,47 @@ const {
   uploadMarks,
 } = require("../controllers/facultyController");
 
-//Auth and Profile
+// Public routes (no auth required)
 router.post("/login", facultyLogin);
 router.post("/forgotPassword", forgotPassword);
 router.post("/postOTP", postOTP);
 
+// Protected routes (auth required)
 router.put(
   "/updateProfile",
-  verifyToken,  // Changed from passport.authenticate
+  verifyToken,
   upload.single("avatar"),
   updateProfile
 );
+
 router.post(
   "/updatePassword",
-  passport.authenticate("jwt", { session: false }),
+  verifyToken,
   updatePassword
 );
 
-//Utility
-router.post(
-  "/fetchStudents",
-  passport.authenticate("jwt", { session: false }),
-  fetchStudents
-);
-router.post(
+// Utility routes
+router.get(
   "/fetchAllSubjects",
-  passport.authenticate("jwt", { session: false }),
+  verifyToken,
   getAllSubjects
 );
+
+router.post(
+  "/fetchStudents", 
+    verifyToken, 
+    fetchStudents
+  );  
+
 router.post(
   "/markAttendance",
-  passport.authenticate("jwt", { session: false }),
+  verifyToken,
   markAttendance
 );
+
 router.post(
   "/uploadMarks",
-  passport.authenticate("jwt", { session: false }),
+  verifyToken,
   uploadMarks
 );
 
