@@ -17,11 +17,13 @@ const validateOTP = require("../validation/otpValidation");
 const validateFacultyUploadMarks = require("../validation/facultyUploadMarks");
 
 //Models
-const Student = require("../models/Student");``
+const Student = require("../models/Student"); ``
 const Subject = require("../models/Subject");
 const Faculty = require("../models/Faculty");
 const Attendance = require("../models/Attendance");
 const Mark = require("../models/Marks");
+
+
 
 exports.facultyLogin = async (req, res, next) => {
   try {
@@ -59,6 +61,9 @@ exports.facultyLogin = async (req, res, next) => {
     console.log("Error in faculty login", err.message);
   }
 };
+
+
+
 
 exports.fetchStudents = async (req, res, next) => {
   try {
@@ -106,159 +111,159 @@ exports.fetchStudents = async (req, res, next) => {
   }
 };
 
-exports.markAttendance = async (req, res) => {
-    try {
-        const { selectedStudents, subjectCode, department, year, section } = req.body;
 
-        // Validate input
-        if (!selectedStudents || !subjectCode || !department || !year || !section) {
-            return res.status(400).json({
-                success: false,
-                message: "Missing required fields"
-            });
-        }
 
-        // Find subject
-        const subject = await Subject.findOne({ subjectCode });
-        if (!subject) {
-            return res.status(404).json({
-                success: false,
-                message: "Subject not found"
-            });
-        }
 
-        // Find students with exact department match
-        const students = await Student.find({
-            _id: { $in: selectedStudents },
-            department: department.trim()
+exports.markAttendance = async (req, res, next) => {
+  try {
+    const { selectedStudents, subjectCode, department, year, section } =
+      req.body;
+
+    console.log(req.body);
+    const sub = await Subject.findOne({ subjectCode });
+
+    const allStudents = await Student.find({ department, year, section });
+
+    //Get students that did not attend
+    let filteredArr = allStudents.filter((item) => {
+      return selectedStudents.indexOf(item.id) === -1;
+    });
+
+    //Mark attendance
+    for (let i = 0; i < filteredArr.length; i++) {
+      //get previous attendance record
+      const prev = await Attendance.findOne({
+        student: filteredArr[i]._id,
+        subject: sub._id,
+      });
+
+      if (!prev) {
+        const attendance = new Attendance({
+          student: filteredArr[i],
+          subject: sub._id,
         });
 
-        if (students.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "No students found with given criteria"
-            });
-        }
-
-        // Create attendance records
-        const attendanceRecords = students.map(student => ({
-            student: student._id,
-            subject: subject._id,
-            faculty: req.faculty._id,
-            date: new Date(),
-            status: 'present'
-        }));
-
-        // Save attendance records
-        await Attendance.insertMany(attendanceRecords);
-
-        return res.status(200).json({
-            success: true,
-            message: "Attendance marked successfully",
-            markedStudents: students.length
-        });
-
-    } catch (error) {
-        console.error("Error in marking attendance:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Error in marking attendance",
-            error: error.message
-        });
+        attendance.totalLectures += 1;
+        await attendance.save();
+      } else {
+        prev.totalLectures += 1;
+        await prev.save();
+      }
     }
+
+    for (let j = 0; j < selectedStudents.length; j++) {
+      const prev = await Attendance.findOne({
+        student: selectedStudents[j],
+        subject: sub._id,
+      });
+      if (!prev) {
+        const attendance = new Attendance({
+          student: selectedStudents[j],
+          subject: sub._id,
+        });
+
+        attendance.totalLectures += 1;
+        attendance.lecturesAttended += 1;
+        await attendance.save();
+      } else {
+        prev.totalLectures += 1;
+        prev.lecturesAttended += 1;
+        await prev.save();
+      }
+    }
+
+    res.status(200).json({ message: "Attendance marked" });
+  } catch (err) {
+    return res.status(400).json({ message: "Error in marking attendance" });
+  }
 };
 
-exports.uploadMarks = async (req, res) => {
-    try {
-        // Check if faculty exists in request
-        if (!req.faculty || !req.faculty._id) {
-            return res.status(401).json({
-                success: false,
-                message: "Faculty not authenticated"
-            });
-        }
 
-        const { subjectCode, exam, totalMarks, marks, section } = req.body;
 
-        // Validate required fields
-        if (!subjectCode || !exam || !totalMarks || !marks || !section) {
-            return res.status(400).json({
-                success: false,
-                message: "All fields are required"
-            });
-        }
 
-        // Find subject and verify faculty authorization
-        const subject = await Subject.findOne({ subjectCode });
-        if (!subject) {
-            return res.status(404).json({
-                success: false,
-                message: "Subject not found"
-            });
-        }
 
-        // Process each mark entry
-        const markPromises = marks.map(async (mark) => {
-            const student = await Student.findById(mark.studentId);
-            if (!student) {
-                throw new Error(`Student with ID ${mark.studentId} not found`);
-            }
+exports.uploadMarks = async (req, res, next) => {
+  try {
+    const { errors, isValid } = validateFacultyUploadMarks(req.body);
 
-            return {
-                student: student._id,
-                subject: subject._id,
-                exam,
-                department: student.department,
-                semester: student.semester || 1,
-                section,
-                marksObtained: Number(mark.marksObtained),
-                totalMarks: Number(totalMarks),
-                faculty: req.faculty._id  // Now guaranteed to exist
-            };
-        });
-
-        const markRecords = await Promise.all(markPromises);
-        await Mark.insertMany(markRecords);
-
-        return res.status(200).json({
-            success: true,
-            message: "Marks uploaded successfully",
-            count: markRecords.length
-        });
-
-    } catch (error) {
-        console.error("Error uploading marks:", error);
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
+    if (!isValid) {
+      return res.status(400).json(errors);
     }
+
+    const { subjectCode, exam, totalMarks, marks, department, section } = req.body;
+
+    const subject = await Subject.findOne({ subjectCode });
+    if (!subject) {
+      return res.status(404).json({ message: "Subject not found" });
+    }
+
+    // ❗ Corrected: check using "subject" field, not subjectCode
+    const alreadyMarked = await Mark.find({
+      exam,
+      department,
+      section,
+      subject: subject._id,
+    });
+
+    if (alreadyMarked.length !== 0) {
+      return res.status(400).json({
+        message: "Marks have already been uploaded for this record",
+      });
+    }
+
+    // Uploading each student's marks
+    for (let i = 0; i < marks.length; i++) {
+      // ✅ Log before saving
+      console.log("Saving mark for:", {
+        student: marks[i]._id,
+        department,
+        exam,
+        subject: subject._id,
+        marks: marks[i].marksObtained,
+      });
+
+      const newMarks = new Mark({
+        student: marks[i]._id,           // Make sure _id is present in the payload
+        subject: subject._id,
+        exam,
+        department,
+        section,
+        marks: marks[i].marksObtained,
+        totalMarks,
+      });
+
+      await newMarks.save(); // Save mark to DB
+    }
+
+    res.status(200).json({ message: "Marks uploaded successfully" });
+  } catch (err) {
+    console.error("Error in uploading marks:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
 };
 
-exports.getAllSubjects = async (req, res) => {
-    try {
-        const subjects = await Subject.find({});
-        
-        if (!subjects) {
-            return res.status(404).json({
-                success: false,
-                message: "No subjects found"
-            });
-        }
 
-        res.status(200).json({
-            success: true,
-            subjects
-        });
-    } catch (error) {
-        console.error("Error fetching subjects:", error);
-        res.status(500).json({
-            success: false,
-            message: "Error fetching subjects",
-            error: error.message
-        });
+
+
+
+exports.getAllSubjects = async (req, res, next) => {
+  try {
+    const allSubjects = await Subject.find({});
+    if (!allSubjects) {
+      return res
+        .status(404)
+        .json({ message: "You havent registered any subject yet." });
     }
+    res.status(200).json({ allSubjects });
+  } catch (err) {
+    res
+      .status(400)
+      .json({ message: `Error in getting all Subjects", ${err.message}` });
+  }
 };
+
+
+
 
 exports.updatePassword = async (req, res, next) => {
   try {
@@ -292,6 +297,9 @@ exports.updatePassword = async (req, res, next) => {
     console.log("Error in updating password", err.message);
   }
 };
+
+
+
 
 exports.forgotPassword = async (req, res, next) => {
   try {
@@ -330,6 +338,8 @@ exports.forgotPassword = async (req, res, next) => {
   }
 };
 
+
+
 exports.postOTP = async (req, res, next) => {
   try {
     const { errors, isValid } = validateOTP(req.body);
@@ -348,10 +358,10 @@ exports.postOTP = async (req, res, next) => {
       errors.email = "Email not found";
       return res.status(404).json(errors);
     }
-if (String(faculty.otp) !== String(otp)) {
-    errors.otp = "Invalid OTP..Please try again";
-    return res.status(400).json(errors);
-}
+    if (String(faculty.otp) !== String(otp)) {
+      errors.otp = "Invalid OTP..Please try again";
+      return res.status(400).json(errors);
+    }
 
     let hashedPassword = await bcrypt.hash(newPassword, 10);
     faculty.password = hashedPassword;
@@ -367,57 +377,57 @@ if (String(faculty.otp) !== String(otp)) {
 
 
 exports.updateProfile = async (req, res) => {
-    try {
-        const { email, facultyMobileNumber, registrationNumber } = req.body;
-        
-        // Check if faculty exists in request
-        if (!req.faculty || !req.faculty._id) {
-            return res.status(401).json({
-                success: false,
-                message: "Faculty not authenticated"
-            });
-        }
+  try {
+    const { email, facultyMobileNumber, registrationNumber } = req.body;
 
-        // Validate input
-        if (!email && !facultyMobileNumber && !registrationNumber) {
-            return res.status(400).json({
-                success: false,
-                message: "Please provide at least one field to update"
-            });
-        }
-
-        // Find and update faculty
-        const updatedFaculty = await Faculty.findByIdAndUpdate(
-            req.faculty._id,
-            { 
-                $set: {
-                    email: email || req.faculty.email,
-                    facultyMobileNumber: facultyMobileNumber || req.faculty.facultyMobileNumber,
-                    registrationNumber: registrationNumber || req.faculty.registrationNumber
-                }
-            },
-            { new: true, runValidators: true }
-        );
-
-        if (!updatedFaculty) {
-            return res.status(404).json({
-                success: false,
-                message: "Faculty not found"
-            });
-        }
-
-        return res.status(200).json({
-            success: true,
-            message: "Profile updated successfully",
-            faculty: updatedFaculty
-        });
-
-    } catch (error) {
-        console.error("Update profile error:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Error updating profile",
-            error: error.message
-        });
+    // Check if faculty exists in request
+    if (!req.faculty || !req.faculty._id) {
+      return res.status(401).json({
+        success: false,
+        message: "Faculty not authenticated"
+      });
     }
+
+    // Validate input
+    if (!email && !facultyMobileNumber && !registrationNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide at least one field to update"
+      });
+    }
+
+    // Find and update faculty
+    const updatedFaculty = await Faculty.findByIdAndUpdate(
+      req.faculty._id,
+      {
+        $set: {
+          email: email || req.faculty.email,
+          facultyMobileNumber: facultyMobileNumber || req.faculty.facultyMobileNumber,
+          registrationNumber: registrationNumber || req.faculty.registrationNumber
+        }
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedFaculty) {
+      return res.status(404).json({
+        success: false,
+        message: "Faculty not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      faculty: updatedFaculty
+    });
+
+  } catch (error) {
+    console.error("Update profile error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error updating profile",
+      error: error.message
+    });
+  }
 };

@@ -150,6 +150,8 @@ const FacultyAttendance = () => {
         e.preventDefault();
         console.log(checkedValue);
         dispatch(markAttendance(checkedValue,subjectCode,department,year,section))
+        //print in console 
+        //console.log("Attendance marked for: ", checkedValue, "Subject Code: ", subjectCode, "Department: ", department, "Year: ", year, "Section: ", section);
         setCheckedValue([])
         alert.success("Attendance Marked!")
     }

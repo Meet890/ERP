@@ -4,22 +4,26 @@ const keys = require('../config/key');
 
 module.exports = async function (req, res, next) {
     try {
-        // Get token from header
+        // Log headers for debugging
+        console.log('Headers:', req.headers);
+        
         const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        if (!authHeader) {
             return res.status(401).json({
                 success: false,
-                message: "Invalid token format"
+                message: "Authorization header missing"
             });
         }
 
-        // Extract token
-        const token = authHeader.split(' ')[1];
-        
-        // Verify token
+        const token = authHeader.startsWith('Bearer ') 
+            ? authHeader.substring(7) 
+            : authHeader;
+
+        // Verify token using the correct secret key
         const decoded = jwt.verify(token, keys.secretOrKey);
-        
-        // Find faculty and attach to request
+        console.log('Decoded token:', decoded);
+
+        // Find faculty using the ID from token
         const faculty = await Faculty.findById(decoded.id);
         if (!faculty) {
             return res.status(401).json({
@@ -28,15 +32,14 @@ module.exports = async function (req, res, next) {
             });
         }
 
-        // Set faculty in request object
+        // Attach faculty to request object
         req.faculty = faculty;
         next();
-
     } catch (error) {
-        console.error('Auth middleware error:', error);
+        console.error('Auth error:', error);
         return res.status(401).json({
             success: false,
-            message: "Faculty not authenticated",
+            message: "Invalid token",
             error: error.message
         });
     }

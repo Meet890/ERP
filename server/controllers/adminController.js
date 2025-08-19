@@ -18,6 +18,9 @@ const Admin = require("../models/Admin");
 //Config
 const keys = require("../config/key");
 
+
+
+
 exports.addAdmin = async (req, res, next) => {
   try {
     const { errors, isValid } = validateAdminRegisterInput(req.body);
@@ -101,6 +104,9 @@ exports.addAdmin = async (req, res, next) => {
   }
 };
 
+
+
+
 exports.adminLogin = async (req, res, next) => {
   try {
     const { errors, isValid } = validateAdminLoginInput(req.body);
@@ -143,6 +149,9 @@ exports.adminLogin = async (req, res, next) => {
     console.log("Error in admin login", err.message);
   }
 };
+
+
+
 
 exports.addStudent = async (req, res, next) => {
   try {
@@ -235,6 +244,9 @@ exports.addStudent = async (req, res, next) => {
   }
 };
 
+
+
+
 exports.addFaculty = async (req, res, next) => {
   try {
     const { errors, isValid } = validateFacultyRegisterInput(req.body);
@@ -310,6 +322,9 @@ exports.addFaculty = async (req, res, next) => {
   }
 };
 
+
+
+
 exports.addSubject = async (req, res, next) => {
   try {
     const { errors, isValid } = validateSubjectRegisterInput(req.body);
@@ -351,6 +366,9 @@ exports.addSubject = async (req, res, next) => {
   }
 };
 
+
+
+
 exports.getAllStudents = async (req, res, next) => {
   try {
     const students = await Student.find();
@@ -366,6 +384,9 @@ exports.getAllStudents = async (req, res, next) => {
   }
 };
 
+
+
+
 exports.getAllFaculty = async (req, res, next) => {
   try {
     const faculties = await Faculty.find({});
@@ -379,6 +400,9 @@ exports.getAllFaculty = async (req, res, next) => {
       .json({ message: `Error in getting all faculties", ${err.message}` });
   }
 };
+
+
+
 
 exports.getAllSubjects = async (req, res, next) => {
   try {
@@ -396,6 +420,8 @@ exports.getAllSubjects = async (req, res, next) => {
   }
 };
 
+
+
 exports.getStudents = async (req, res, next) => {
   try {
     const { department, year } = req.body;
@@ -406,6 +432,9 @@ exports.getStudents = async (req, res, next) => {
   }
 };
 
+
+
+
 exports.getFaculty = async (req, res, next) => {
   try {
     const { department } = req.body;
@@ -415,6 +444,9 @@ exports.getFaculty = async (req, res, next) => {
     console.log("Error in gettting all faculties", err.message);
   }
 };
+
+
+
 
 exports.getSubjects = async (req, res, next) => {
   try {

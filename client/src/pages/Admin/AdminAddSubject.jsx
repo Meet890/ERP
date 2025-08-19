@@ -166,7 +166,7 @@ const AdminAddSubject = () => {
                          </ProfilePhone>
                          <ProfileName>
                              <SupervisorAccount/>
-                             <ProfileInput type="text" placeholder="Total Lectures" required  value={totalLectures} onChange={(e) => setTotalLectures(e.target.value)}/>
+                             <ProfileInput type="number" placeholder="Total Lectures" required  value={totalLectures} onChange={(e) => setTotalLectures(e.target.value)}/>
                          </ProfileName>
                          <ProfileName>
                              <Class/>
