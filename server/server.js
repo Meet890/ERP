@@ -8,7 +8,6 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 dotenv.config();
 
-
 //Setup Middlewares
 const app = express();
 let server = http.createServer(app);
@@ -78,7 +77,7 @@ mongoose
     console.log("Error in connecting to MongoDB", err.message);
   });
 
-app.use("/health", (req, res) => {
+app.use("/", (req, res) => {
   res.status(200).json(_response);
 });
 

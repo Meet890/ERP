@@ -1,4 +1,4 @@
-import axios from "../axiosInstance"; //  changed from 'axios' to your custom instance
+import axios from "axios";
 import authToken from "../utils/authToken";
 import jwt_decode from "jwt-decode";
 import {
@@ -10,23 +10,90 @@ import {
   SET_FLAG,
 } from "../actionTypes";
 
-// ... unchanged helper functions
-export const chatHistory = (data) => ({ type: "SET_CHAT", payload: data });
-export const chatHelp = (data) => ({ type: "CHAT_HELPER", payload: data });
-export const getStudentByRegNumHelper = (data) => ({ type: "GET_STUDENT_BY_REG_NUM", payload: data });
-export const setStudent = (data) => ({ type: "SET_STUDENT", payload: data });
-const privateConversation = (data) => ({ type: "GET_PRIVATE_CONVERSATION", payload: data });
-const privateConversation2 = (data) => ({ type: "GET_PRIVATE_CONVERSATION2", payload: data });
-const newerChatsHelper = (data) => ({ type: "GET_NEWER_CHATS", payload: data });
-const previousChatsHelper = (data) => ({ type: "GET_PREVIOUS_CHATS", payload: data });
-const getAllSubjectsHelper = (data) => ({ type: "GET_ALL_SUBJECTS", payload: data });
-const fetchAttendenceHelper = (data) => ({ type: "GET_ATTENDENCE", payload: data });
-const getMarksHelper = (data) => ({ type: "GET_MARKS", payload: data });
+export const chatHistory = (data) => {
+  return {
+    type: "SET_CHAT",
+    payload: data,
+  };
+};
+
+export const chatHelp = (data) => {
+  return {
+    type: "CHAT_HELPER",
+    payload: data,
+  };
+};
+
+export const getStudentByRegNumHelper = (data) => {
+  return {
+    type: "GET_STUDENT_BY_REG_NUM",
+    payload: data,
+  };
+};
+
+export const setStudent = (data) => {
+  return {
+    type: "SET_STUDENT",
+    payload: data,
+  };
+};
+
+const privateConversation = (data) => {
+  return {
+    type: "GET_PRIVATE_CONVERSATION",
+    payload: data,
+  };
+};
+
+const privateConversation2 = (data) => {
+  return {
+    type: "GET_PRIVATE_CONVERSATION2",
+    payload: data,
+  };
+};
+
+const newerChatsHelper = (data) => {
+  return {
+    type: "GET_NEWER_CHATS",
+    payload: data,
+  };
+};
+
+const previousChatsHelper = (data) => {
+  return {
+    type: "GET_PREVIOUS_CHATS",
+    payload: data,
+  };
+};
+
+const getAllSubjectsHelper = (data) => {
+  return {
+    type: "GET_ALL_SUBJECTS",
+    payload: data,
+  };
+};
+
+const fetchAttendenceHelper = (data) => {
+  return {
+    type: "GET_ATTENDENCE",
+    payload: data,
+  };
+};
+
+const getMarksHelper = (data) => {
+  return {
+    type: "GET_MARKS",
+    payload: data,
+  };
+};
 
 export const studentLogin = (studentCredentials) => {
   return async (dispatch) => {
     try {
-      const { data } = await axios.post("/api/student/login", studentCredentials);
+      const { data } = await axios.post(
+        "/api/student/login",
+        studentCredentials
+      );
       const { token } = data;
 
       localStorage.setItem("studentToken", token);
@@ -35,7 +102,10 @@ export const studentLogin = (studentCredentials) => {
       const decoded = jwt_decode(token);
       dispatch(setStudent(decoded));
     } catch (err) {
-      dispatch({ type: SET_ERRORS_HELPER, payload: err.response.data });
+      dispatch({
+        type: SET_ERRORS_HELPER,
+        payload: err.response.data,
+      });
     }
   };
 };
@@ -43,9 +113,16 @@ export const studentLogin = (studentCredentials) => {
 export const studentUpdatePassword = (passwordData) => {
   return async (dispatch) => {
     try {
-      await axios.post("/api/student/updatePassword", passwordData);
+      const { data } = await axios.post(
+        "/api/student/updatePassword",
+        passwordData
+      );
+      //alert("Password Updated Successfully");
     } catch (err) {
-      dispatch({ type: SET_ERRORS_HELPER, payload: err.response.data });
+      dispatch({
+        type: SET_ERRORS_HELPER,
+        payload: err.response.data,
+      });
     }
   };
 };
@@ -64,7 +141,10 @@ export const chatHelper = (name) => {
 export const getStudentByRegNum = (registrationNumber) => {
   return async (dispatch) => {
     try {
-      const { data } = await axios.post("/api/student/getStudentByRegNum", { registrationNumber });
+      // console.log(registrationNumber);
+      const { data } = await axios.post("/api/student/getStudentByRegNum", {
+        registrationNumber,
+      });
       dispatch(getStudentByRegNumHelper(data.result));
     } catch (err) {
       console.log(err);
@@ -79,7 +159,10 @@ export const getOTPStudent = (email) => {
       alert("OTP sent to your email");
       dispatch({ type: SET_FLAG });
     } catch (err) {
-      dispatch({ type: SET_ERRORS, payload: err.response.data });
+      dispatch({
+        type: SET_ERRORS,
+        payload: err.response.data,
+      });
     }
   };
 };
@@ -87,10 +170,13 @@ export const getOTPStudent = (email) => {
 export const submitOTPStudent = (credentials) => {
   return async (dispatch) => {
     try {
-      await axios.post("/api/student/postOTP", credentials);
+      const { data } = await axios.post("/api/student/postOTP", credentials);
       alert("Password updated. Please login again");
     } catch (err) {
-      dispatch({ type: SET_ERRORS, payload: err.response.data });
+      dispatch({
+        type: SET_ERRORS,
+        payload: err.response.data,
+      });
     }
   };
 };
@@ -98,7 +184,10 @@ export const submitOTPStudent = (credentials) => {
 export const sendMessage = (room, messageObj) => {
   return async () => {
     try {
-      await axios.post(`/api/student/chat/${room}`, messageObj);
+      const { data } = await axios.post(
+        `/api/student/chat/${room}`,
+        messageObj
+      );
     } catch (err) {
       console.log("Error in sending message", err.message);
     }
@@ -111,7 +200,7 @@ export const getPrivateConversation = (roomId) => {
       const { data } = await axios.get(`/api/student/chat/${roomId}`);
       dispatch(privateConversation(data.result));
     } catch (err) {
-      console.log("Error in fetching conversation", err.message);
+      console.log("Error in sending message", err.message);
     }
   };
 };
@@ -122,7 +211,7 @@ export const getPrivateConversation2 = (roomId) => {
       const { data } = await axios.get(`/api/student/chat/${roomId}`);
       dispatch(privateConversation2(data.result));
     } catch (err) {
-      console.log("Error in fetching conversation 2", err.message);
+      console.log("Error in sending message", err.emssage);
     }
   };
 };
@@ -130,10 +219,12 @@ export const getPrivateConversation2 = (roomId) => {
 export const previousChats = (senderName) => {
   return async (dispatch) => {
     try {
-      const { data } = await axios.get(`/api/student/chat/previousChats/${senderName}`);
+      const { data } = await axios.get(
+        `/api/student/chat/previousChats/${senderName}`
+      );
       dispatch(previousChatsHelper(data.result));
     } catch (err) {
-      console.log("Error in fetching previous chats", err.message);
+      console.log("Error in sending message", err.message);
     }
   };
 };
@@ -141,10 +232,12 @@ export const previousChats = (senderName) => {
 export const newerChats = (receiverName) => {
   return async (dispatch) => {
     try {
-      const { data } = await axios.get(`/api/student/chat/newerChats/${receiverName}`);
+      const { data } = await axios.get(
+        `/api/student/chat/newerChats/${receiverName}`
+      );
       dispatch(newerChatsHelper(data.result));
     } catch (err) {
-      console.log("Error in fetching newer chats", err.message);
+      console.log("Error in sending message", err.message);
     }
   };
 };
@@ -152,8 +245,17 @@ export const newerChats = (receiverName) => {
 export const studentUpdate = (updatedData) => {
   return async () => {
     try {
-      const config = { headers: { "Content-Type": "multipart/form-data" } };
-      await axios.put(`/api/student/updateProfile`, updatedData, config);
+      const config = {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      };
+
+      const { data } = await axios.put(
+        `/api/student/updateProfile`,
+        updatedData,
+        config
+      );
     } catch (err) {
       console.log("Error in updating student info", err.message);
     }
@@ -193,10 +295,12 @@ export const getMarks = () => {
   };
 };
 
-export const setStudentUser = (data) => ({
-  type: SET_STUDENT,
-  payload: data,
-});
+export const setStudentUser = (data) => {
+  return {
+    type: SET_STUDENT,
+    payload: data,
+  };
+};
 
 export const studentLogout = () => (dispatch) => {
   localStorage.removeItem("studentToken");
