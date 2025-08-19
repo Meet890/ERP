@@ -6,13 +6,11 @@ const keys = require("../config/key");
 const sendEmail = require("../utils/nodemailer");
 
 //Models
-// const Student = require("../models/Student");
+const Student = require("../models/Student");
 const Subject = require("../models/Subject");
 const Attendance = require("../models/Attendance");
 const Message = require("../models/Message");
 const Mark = require("../models/Marks");
-const Student = require("../models/studentModel");
-
 
 //File Handler
 const bufferConversion = require("../utils/bufferConversion");
@@ -25,39 +23,6 @@ const validateForgotPassword = require("../validation/forgotPassword");
 const validateOTP = require("../validation/otpValidation");
 const { markAttendance } = require("./facultyController");
 
-
-//Student registration
-exports.registerStudent = async (req, res) => {
-    const { registrationNumber, name, department, email, password } = req.body;
-
-    try {
-        const existingStudent = await Student.findOne({ registrationNumber });
-        if (existingStudent) {
-            return res.status(400).json({ message: "Student already exists" });
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        const newStudent = new Student({
-            registrationNumber,
-            name,
-            department,
-            email,
-            password: hashedPassword
-        });
-
-        await newStudent.save();
-
-        res.status(201).json({ message: "Student registered successfully" });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
-
-
-//Student login
 exports.studentLogin = async (req, res, next) => {
   const { errors, isValid } = validateStudentLoginInput(req.body);
   if (!isValid) {
@@ -87,8 +52,6 @@ exports.studentLogin = async (req, res, next) => {
   });
 };
 
-
-//check attendance
 exports.checkAttendance = async (req, res, next) => {
   try {
     // console.log(req.user);
@@ -120,8 +83,6 @@ exports.checkAttendance = async (req, res, next) => {
   }
 };
 
-
-//get all students
 exports.getAllStudents = async (req, res, next) => {
   try {
     const { department, year, section } = req.body;
@@ -136,8 +97,6 @@ exports.getAllStudents = async (req, res, next) => {
   }
 };
 
-
-//get the student by name
 exports.getStudentByName = async (req, res, next) => {
   try {
     const { name } = req.body;
@@ -151,8 +110,6 @@ exports.getStudentByName = async (req, res, next) => {
   }
 };
 
-
-//get the student by registration number
 exports.getStudentByRegNum = async (req, res, next) => {
   try {
     const { registrationNumber } = req.body;
@@ -168,8 +125,6 @@ exports.getStudentByRegNum = async (req, res, next) => {
   }
 };
 
-
-//update password
 exports.updatePassword = async (req, res, next) => {
   try {
     const { errors, isValid } = validateStudentUpdatePassword(req.body);
@@ -202,8 +157,6 @@ exports.updatePassword = async (req, res, next) => {
   }
 };
 
-
-//forgot password
 exports.forgotPassword = async (req, res, next) => {
   try {
     const { errors, isValid } = validateForgotPassword(req.body);

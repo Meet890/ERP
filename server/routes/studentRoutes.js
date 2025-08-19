@@ -1,11 +1,9 @@
 const express = require("express");
-//const router = express.Router();
-const router = require("express").Router();
+const router = express.Router();
 const passport = require("passport");
 const upload = require("../utils/multer");
 
 const {
-  registerStudent,
   studentLogin,
   getAllStudents,
   getAllMarks,
@@ -24,7 +22,6 @@ const {
 } = require("../controllers/studentController");
 
 //Auth and Profile Related
-router.post("/register", registerStudent);
 router.post("/login", studentLogin);
 router.post("/forgotPassword", forgotPassword);
 router.post("/postOTP", postOTP);

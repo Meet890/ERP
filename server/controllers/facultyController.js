@@ -17,7 +17,7 @@ const validateOTP = require("../validation/otpValidation");
 const validateFacultyUploadMarks = require("../validation/facultyUploadMarks");
 
 //Models
-const Student = require("../models/Student");``
+const Student = require("../models/Student");
 const Subject = require("../models/Subject");
 const Faculty = require("../models/Faculty");
 const Attendance = require("../models/Attendance");

@@ -93,7 +93,7 @@ exports.addAdmin = async (req, res, next) => {
     await newAdmin.save();
     return res.status(200).json({
       success: true,
-      message: "Admin registered successfully",
+      message: "Admin registerd successfully",
       response: newAdmin,
     });
   } catch (err) {
